@@ -18,6 +18,39 @@ import {
   ListGroup,
 } from "react-bootstrap";
 import { useRef } from "react";
+
+// excel zone --------------------------//
+import icon_excel from "./icon_excel.png";
+import Excel from "exceljs";
+import { saveAs } from "file-saver";
+
+const columns = [
+  { header: "First Name", key: "firstName" },
+  { header: "Last Name", key: "lastName" },
+  { header: "Purchase Price", key: "purchasePrice" },
+  { header: "Payments Made", key: "paymentsMade" },
+];
+
+const data = [
+  {
+    firstName: "Kylie",
+    lastName: "James",
+    purchasePrice: 1000,
+    paymentsMade: 900,
+  },
+  {
+    firstName: "Harry",
+    lastName: "Peake",
+    purchasePrice: 1000,
+    paymentsMade: 1000,
+  },
+];
+
+const workSheetName = "Worksheet-1";
+const workBookName = "MyWorkBook";
+const myInputId = "myInput";
+
+//----------------------------------------//
 function App() {
   const [scan_qr, setScan_QR] = useState("");
   const [NO, setNO] = useState("");
@@ -42,6 +75,39 @@ function App() {
   const [result_pattern, setResult_pattern] = useState([]);
   const [result_qty, setResult_qty] = useState([]);
   const [result_sum, setResult_sum] = useState([]);
+  //---------------set summary -------------------------------------//
+  const [load_date, setLoad_date] = useState([]);
+  const [buyer, setBuyer] = useState([]);
+  const [order_no, setOrder_no] = useState([]);
+  const [brand, setBrand] = useState([]);
+  const [agent, setAgent] = useState([]);
+  const [seal_no, setSeal_no] = useState([]);
+  const [ctrn_no, setCtrn] = useState([]);
+
+  const [car_no, setCar_no] = useState([]);
+  const [check_in, setCheck_in] = useState([]);
+  const [check_out, setCheck_out] = useState([]);
+
+  const [t_tail, setT_tail] = useState([]);
+  const [t_side, setT_side] = useState([]);
+  const [t_top, setT_top] = useState([]);
+  const [t_head, setT_head] = useState([]);
+  const [t_buttom, setT_buttom] = useState([]);
+
+  const [t_clean, setT_clean] = useState([]);
+  const [t_leak, setT_leak] = useState([]);
+  const [t_break, setT_break] = useState([]);
+  const [t_smell, setT_smell] = useState([]);
+  const [t_water, setT_water] = useState([]);
+  const [t_net, setT_net] = useState([]);
+  const [t_safe, setT_safe] = useState([]);
+  const [t_pin, setT_pin] = useState([]);
+
+  const [blank, setBlank] = useState([]);
+  const [inner, setInner] = useState([]);
+  const [label, setLabel] = useState([]);
+  const [real_load, setReal_load] = useState([]);
+  const [short_shipped, setShort_shipped] = useState([]);
   //img zone//
   const img_qr = (
     <svg
@@ -139,22 +205,86 @@ function App() {
   function submit_form(e) {
     e.preventDefault();
     var item =
+      "[NO." +
       NO +
-      " - " +
+      "(" +
       side +
-      " - " +
+      " )] - [PD CODE : " +
       product_code +
-      " - " +
+      "] - [DATE CODE : " +
       date_code +
-      " - " +
+      "] - [PATTERN : " +
       pattern +
-      " - " +
+      "] - [QTY : " +
       QTY +
-      " - " +
-      sum_of_date_code;
+      "] - [SUM : " +
+      sum_of_date_code +
+      "]";
     setAdd_product([...add_product, item]);
     inputRef.current.value = "";
   }
+
+  const workbook = new Excel.Workbook();
+  const saveExcel = async (e) => {
+    e.preventDefault();
+    try {
+      const myInput = document.getElementById(myInputId);
+      const fileName = myInput.value || workBookName;
+
+      // creating one worksheet in workbook
+      const worksheet = workbook.addWorksheet(workSheetName);
+
+      // add worksheet columns
+      // each columns contains header and its mapping key from data
+      worksheet.columns = columns;
+
+      // updated the font for first row.
+      worksheet.getRow(1).font = { bold: true };
+
+      // loop through all of the columns and set the alignment with width.
+      worksheet.columns.forEach((column) => {
+        column.width = column.header.length + 5;
+        column.alignment = { horizontal: "center" };
+      });
+
+      // loop through data and add each one to worksheet
+      data.forEach((singleData) => {
+        worksheet.addRow(singleData);
+      });
+
+      // loop through all of the rows and set the outline style.
+      worksheet.eachRow({ includeEmpty: false }, (row) => {
+        // store each cell to currentCell
+        const currentCell = row._cells;
+
+        // loop through currentCell to apply border only for the non-empty cell of excel
+        currentCell.forEach((singleCell) => {
+          // store the cell address i.e. A1, A2, A3, B1, B2, B3, ...
+          const cellAddress = singleCell._address;
+
+          // apply border
+          worksheet.getCell(cellAddress).border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+        });
+      });
+
+      // write the content using writeBuffer
+      const buf = await workbook.xlsx.writeBuffer();
+
+      // download the processed file
+      saveAs(new Blob([buf]), `${fileName}.xlsx`);
+    } catch (error) {
+      console.error("<<<ERRROR>>>", error);
+      console.error("Something Went Wrong", error.message);
+    } finally {
+      // removing worksheet's instance to create new one
+      workbook.removeWorksheet(workSheetName);
+    }
+  };
 
   return (
     <div className="App">
@@ -187,49 +317,73 @@ function App() {
                               <InputGroup.Text id="basic-addon2">
                                 LOADING DATE :
                               </InputGroup.Text>
-                              <Form.Control type="date" />
+                              <Form.Control
+                                type="date"
+                                onChange={(e) => setLoad_date(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 BUYER :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setBuyer(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 ORDER NO. :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setOrder_no(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 BRAND :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setBrand(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 QUANTITY :
                               </InputGroup.Text>
-                              <Form.Control type="number" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setQTY(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 AGENT :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setAgent(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 SEAL NO. :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setSeal_no(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 CTNR NO. :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setCtrn(e.target.value)}
+                              />
                             </InputGroup>
                           </InputGroup>
                           <div></div>
@@ -239,6 +393,7 @@ function App() {
                               type="submit"
                               className="text-center m-2 "
                               style={{ width: "5rem" }}
+                              disabled
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -265,17 +420,26 @@ function App() {
                               <InputGroup.Text id="basic-addon2">
                                 ทะเบียนรถ/หัวลาก :
                               </InputGroup.Text>
-                              <Form.Control type="text" />
+                              <Form.Control
+                                type="text"
+                                onChange={(e) => setCar_no(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <InputGroup.Text id="basic-addon2">
                                 เวลาเข้า :
                               </InputGroup.Text>
-                              <Form.Control type="time" />
+                              <Form.Control
+                                type="time"
+                                onChange={(e) => setCheck_in(e.target.value)}
+                              />
                               <InputGroup.Text id="basic-addon2">
                                 เวลาออก :
                               </InputGroup.Text>
-                              <Form.Control type="time" />
+                              <Form.Control
+                                type="time"
+                                onChange={(e) => setCheck_out(e.target.value)}
+                              />
                             </InputGroup>
                             <InputGroup className="mt-3 ">
                               <Card className="m-2">
@@ -288,6 +452,8 @@ function App() {
                                   id="custom-switch"
                                   label="ท้ายตู้"
                                   className="m-2"
+                                  value="checked"
+                                  onChange={setT_tail}
                                 />
                                 <Form.Check
                                   type="switch"
@@ -418,7 +584,10 @@ function App() {
                                   >
                                     กล่องเปล่าเข้าตู้ :
                                   </InputGroup.Text>
-                                  <Form.Control type="number" />{" "}
+                                  <Form.Control
+                                    type="number"
+                                    onChange={(e) => setBlank(e.target.value)}
+                                  />{" "}
                                   <InputGroup.Text id="basic-addon2">
                                     ใบ
                                   </InputGroup.Text>
@@ -433,7 +602,10 @@ function App() {
                                   >
                                     Inner เปล่าเข้าตู้ :
                                   </InputGroup.Text>
-                                  <Form.Control type="number" />{" "}
+                                  <Form.Control
+                                    type="number"
+                                    onChange={(e) => setInner(e.target.value)}
+                                  />{" "}
                                   <InputGroup.Text id="basic-addon2">
                                     ใบ
                                   </InputGroup.Text>
@@ -448,7 +620,10 @@ function App() {
                                   >
                                     ฉลากเข้าตู้ :
                                   </InputGroup.Text>
-                                  <Form.Control type="number" />{" "}
+                                  <Form.Control
+                                    type="number"
+                                    onChange={(e) => setLabel(e.target.value)}
+                                  />{" "}
                                   <InputGroup.Text id="basic-addon2">
                                     ใบ
                                   </InputGroup.Text>
@@ -463,7 +638,12 @@ function App() {
                                   >
                                     จำนวนที่ส่งมอบจริง :
                                   </InputGroup.Text>
-                                  <Form.Control type="number" />{" "}
+                                  <Form.Control
+                                    type="number"
+                                    onChange={(e) =>
+                                      setReal_load(e.target.value)
+                                    }
+                                  />{" "}
                                   <InputGroup.Text id="basic-addon2">
                                     กล่อง
                                   </InputGroup.Text>
@@ -478,7 +658,12 @@ function App() {
                                   >
                                     SHORT SHIPPED :
                                   </InputGroup.Text>
-                                  <Form.Control type="number" />{" "}
+                                  <Form.Control
+                                    type="number"
+                                    onChange={(e) =>
+                                      setShort_shipped(e.target.value)
+                                    }
+                                  />{" "}
                                   <InputGroup.Text id="basic-addon2">
                                     กล่อง
                                   </InputGroup.Text>
@@ -493,6 +678,7 @@ function App() {
                               type="submit"
                               className="text-center m-2 "
                               style={{ width: "5rem" }}
+                              disabled
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -676,8 +862,33 @@ function App() {
                     </Tab>
                     <Tab eventKey="content-form" title={summary_list}>
                       <Col>
-                        <Card className="m-2 p-2">
+                        <Card className="m-2 p-2 mt-4">
                           <Row>
+                            <div className=" p-3">
+                              <InputGroup className="mt-3">
+                                <InputGroup.Text id="basic-addon2">
+                                  File name :
+                                </InputGroup.Text>
+                                <Form.Control
+                                  type="text"
+                                  id={myInputId}
+                                  defaultValue={workBookName}
+                                  // onChange={(e) => setLoad_date(e.target.value)}
+                                />
+                                <Button
+                                  variant="outline-success"
+                                  type="submit"
+                                  className="text-center  "
+                                  class="btn btn-outline-success"
+                                  style={{ width: "5rem" }}
+                                  onClick={saveExcel}
+                                >
+                                  <img src={icon_excel} alt="Logo" width={20} />
+                                </Button>
+                              </InputGroup>
+                              {/* <EX1></EX1> */}
+                            </div>
+
                             <div style={{ width: "20rem" }} className="m-2">
                               <p>
                                 {" "}
@@ -687,23 +898,22 @@ function App() {
                               <ListGroup>
                                 <ListGroup.Item>
                                   {" "}
-                                  LOADING DATE : [22/09/22]
+                                  LOADING DATE : {load_date}
+                                </ListGroup.Item>
+                                <ListGroup.Item>BUYER : {buyer}</ListGroup.Item>
+                                <ListGroup.Item>
+                                  ORDER NO : {order_no}
                                 </ListGroup.Item>
                                 <ListGroup.Item>
-                                  BUYER : [i-Tail]
+                                  {" "}
+                                  BRAND : {brand}
+                                </ListGroup.Item>
+                                <ListGroup.Item>AGENT : {agent}</ListGroup.Item>
+                                <ListGroup.Item>
+                                  SEAL NO : {seal_no}
                                 </ListGroup.Item>
                                 <ListGroup.Item>
-                                  ORDER NO : [THU22-092022]
-                                </ListGroup.Item>
-                                <ListGroup.Item> BRAND : [NAME]</ListGroup.Item>
-                                <ListGroup.Item>
-                                  AGENT : [i-Tail]
-                                </ListGroup.Item>
-                                <ListGroup.Item>
-                                  SEAL NO : [09500123]
-                                </ListGroup.Item>
-                                <ListGroup.Item>
-                                  CTRN NO : [00326590]
+                                  CTNR NO : {ctrn_no}
                                 </ListGroup.Item>
                               </ListGroup>
                             </div>
@@ -715,21 +925,129 @@ function App() {
                               <Card.Text>
                                 <ListGroup>
                                   <ListGroup.Item>
-                                    ทะเบียนหัวรถลาก: [ตย 90000 สงขลา.]
+                                    ทะเบียนหัวรถลาก: {car_no}
                                   </ListGroup.Item>
                                   <ListGroup.Item>
-                                    เวลาเข้า : [08:00]
+                                    เวลาเข้า : {check_in}
                                   </ListGroup.Item>
                                   <ListGroup.Item>
-                                    เวลาออก : [17:00]
+                                    เวลาออก : {check_out}
                                   </ListGroup.Item>
                                 </ListGroup>
                               </Card.Text>
+                              <Card className="">
+                                <InputGroup.Text id="basic-addon2">
+                                  การตรวจสภาพหลังบรรจุ :
+                                </InputGroup.Text>
+                                <div className="m-3 ">
+                                  <center>
+                                    <InputGroup
+                                      className="m-2 "
+                                      style={{ width: "20rem" }}
+                                    >
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "10rem" }}
+                                      >
+                                        กล่องเปล่าเข้าตู้ :
+                                      </InputGroup.Text>
+                                      <Form.Control
+                                        type="number"
+                                        value={blank}
+                                      />{" "}
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "4rem" }}
+                                      >
+                                        ใบ
+                                      </InputGroup.Text>
+                                    </InputGroup>
+                                    <InputGroup
+                                      className="m-2 "
+                                      style={{ width: "20rem" }}
+                                    >
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "10rem" }}
+                                      >
+                                        Inner เปล่าเข้าตู้ :
+                                      </InputGroup.Text>
+                                      <Form.Control
+                                        type="number"
+                                        value={inner}
+                                      />{" "}
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "4rem" }}
+                                      >
+                                        ใบ
+                                      </InputGroup.Text>
+                                    </InputGroup>
+                                    <InputGroup
+                                      className="m-2 "
+                                      style={{ width: "20rem" }}
+                                    >
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "10rem" }}
+                                      >
+                                        ฉลากเข้าตู้ :
+                                      </InputGroup.Text>
+                                      <Form.Control
+                                        type="number"
+                                        value={label}
+                                      />{" "}
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "4rem" }}
+                                      >
+                                        ใบ
+                                      </InputGroup.Text>
+                                    </InputGroup>
+                                    <InputGroup
+                                      className="m-2 "
+                                      style={{ width: "20rem" }}
+                                    >
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "10rem" }}
+                                      >
+                                        จำนวนที่ส่งมอบจริง :
+                                      </InputGroup.Text>
+                                      <Form.Control
+                                        type="number"
+                                        value={real_load}
+                                      />{" "}
+                                      <InputGroup.Text id="basic-addon2">
+                                        กล่อง
+                                      </InputGroup.Text>
+                                    </InputGroup>
+                                    <InputGroup
+                                      className="m-2 "
+                                      style={{ width: "20rem" }}
+                                    >
+                                      <InputGroup.Text
+                                        id="basic-addon2"
+                                        style={{ width: "10rem" }}
+                                      >
+                                        SHORT SHIPPED :
+                                      </InputGroup.Text>
+                                      <Form.Control
+                                        type="number"
+                                        value={short_shipped}
+                                      />{" "}
+                                      <InputGroup.Text id="basic-addon2">
+                                        กล่อง
+                                      </InputGroup.Text>
+                                    </InputGroup>
+                                  </center>
+                                </div>
+                              </Card>
                             </div>
                             <div className="m-2">
                               <Col>
                                 <InputGroup className="mt-3 ">
-                                  <Card className="m-2">
+                                  {/* <Card className="m-2">
                                     <InputGroup.Text id="basic-addon2">
                                       สภาพตู้ภายนอก :
                                     </InputGroup.Text>
@@ -739,6 +1057,7 @@ function App() {
                                       id="custom-switch"
                                       label="ท้ายตู้"
                                       className="m-2"
+                                      value={t_tail}
                                       checked
                                     />
                                     <Form.Check
@@ -769,8 +1088,8 @@ function App() {
                                       className="m-2"
                                       checked
                                     />
-                                  </Card>
-                                  <Card className="m-2">
+                                  </Card> */}
+                                  {/* <Card className="m-2">
                                     <InputGroup.Text id="basic-addon2">
                                       สภาพตู้ภายใน :
                                     </InputGroup.Text>
@@ -831,8 +1150,8 @@ function App() {
                                       className="m-2"
                                       checked
                                     />
-                                  </Card>
-                                  <Card className="m-2">
+                                  </Card> */}
+                                  {/* <Card className="m-2">
                                     <InputGroup.Text id="basic-addon2">
                                       การตรวจสภาพหลังบรรจุ :
                                     </InputGroup.Text>
@@ -888,7 +1207,10 @@ function App() {
                                       >
                                         กล่องเปล่าเข้าตู้ :
                                       </InputGroup.Text>
-                                      <Form.Control type="number" value={10}/>{" "}
+                                      <Form.Control
+                                        type="number"
+                                        value={blank}
+                                      />{" "}
                                       <InputGroup.Text id="basic-addon2">
                                         ใบ
                                       </InputGroup.Text>
@@ -900,11 +1222,13 @@ function App() {
                                       <InputGroup.Text
                                         id="basic-addon2"
                                         style={{ width: "10rem" }}
-                                        
                                       >
                                         Inner เปล่าเข้าตู้ :
                                       </InputGroup.Text>
-                                      <Form.Control type="number" value={10}/>{" "}
+                                      <Form.Control
+                                        type="number"
+                                        value={inner}
+                                      />{" "}
                                       <InputGroup.Text id="basic-addon2">
                                         ใบ
                                       </InputGroup.Text>
@@ -919,7 +1243,10 @@ function App() {
                                       >
                                         ฉลากเข้าตู้ :
                                       </InputGroup.Text>
-                                      <Form.Control type="number" value={20}/>{" "}
+                                      <Form.Control
+                                        type="number"
+                                        value={label}
+                                      />{" "}
                                       <InputGroup.Text id="basic-addon2">
                                         ใบ
                                       </InputGroup.Text>
@@ -934,7 +1261,10 @@ function App() {
                                       >
                                         จำนวนที่ส่งมอบจริง :
                                       </InputGroup.Text>
-                                      <Form.Control type="number" value={30}/>{" "}
+                                      <Form.Control
+                                        type="number"
+                                        value={real_load}
+                                      />{" "}
                                       <InputGroup.Text id="basic-addon2">
                                         กล่อง
                                       </InputGroup.Text>
@@ -949,12 +1279,15 @@ function App() {
                                       >
                                         SHORT SHIPPED :
                                       </InputGroup.Text>
-                                      <Form.Control type="number" value={10} />{" "}
+                                      <Form.Control
+                                        type="number"
+                                        value={short_shipped}
+                                      />{" "}
                                       <InputGroup.Text id="basic-addon2">
                                         กล่อง
                                       </InputGroup.Text>
                                     </InputGroup>
-                                  </Card>
+                                  </Card> */}
                                 </InputGroup>
 
                                 <div></div>
@@ -963,7 +1296,7 @@ function App() {
                           </Row>
                         </Card>
 
-                        <Card className="m-2 p-2">
+                        <Card className="m-2 p-2 mt-4">
                           Pallet Loaded
                           <Col className="m-5 p-2">
                             <Table responsive>
@@ -982,7 +1315,6 @@ function App() {
                             </Table>
                           </Col>
                         </Card>
-                        <Card className="m-3 p-3">Note</Card>
                       </Col>
                     </Tab>
                   </Tabs>
