@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState, useRef } from "react";
 import cors from "cors";
 import {
   Container,
@@ -17,35 +17,12 @@ import {
   Tabs,
   ListGroup,
 } from "react-bootstrap";
-import { useRef } from "react";
 
 // excel zone --------------------------//
 import icon_excel from "./icon_excel.png";
 import Excel from "exceljs";
 import { saveAs } from "file-saver";
-
-const columns = [
-  { header: "First Name", key: "firstName" },
-  { header: "Last Name", key: "lastName" },
-  { header: "Purchase Price", key: "purchasePrice" },
-  { header: "Payments Made", key: "paymentsMade" },
-];
-
-const data = [
-  {
-    firstName: "Kylie",
-    lastName: "James",
-    purchasePrice: 1000,
-    paymentsMade: 900,
-  },
-  {
-    firstName: "Harry",
-    lastName: "Peake",
-    purchasePrice: 1000,
-    paymentsMade: 1000,
-  },
-];
-
+import { CSVLink } from "react-csv";
 const workSheetName = "Worksheet-1";
 const workBookName = "MyWorkBook";
 const myInputId = "myInput";
@@ -64,6 +41,7 @@ function App() {
 
   const [add_no, setAdd_no] = useState([]);
   const [add_product, setAdd_product] = useState([]);
+  const [add_product2, setAdd_product2] = useState([]);
   const [add_datecode, setAdd_datecode] = useState([]);
   const [add_pattern, setAdd_pattern] = useState([]);
   const [add_QTY, setAdd_QTY] = useState([]);
@@ -108,6 +86,8 @@ function App() {
   const [label, setLabel] = useState([]);
   const [real_load, setReal_load] = useState([]);
   const [short_shipped, setShort_shipped] = useState([]);
+
+  const [filename_excel, setFilename_excel] = useState([]);
   //img zone//
   const img_qr = (
     <svg
@@ -192,6 +172,23 @@ function App() {
     </a>
   );
   // end img zone//
+  //csv zone//
+  const headers_csv = [
+    "No",
+    "SIDE",
+    "Product Code",
+    "DATE Code",
+    "Pattern",
+    "QTY",
+    "SUM of Date Code",
+  ];
+  const data_csv = [add_product];
+  const csvReport = {
+    data: data_csv,
+    headers: headers_csv,
+    filename: filename_excel + ".csv",
+  };
+  //--------//
 
   function sliptext(e) {
     e.preventDefault();
@@ -205,87 +202,66 @@ function App() {
   function submit_form(e) {
     e.preventDefault();
     var item =
-      "[NO." +
+      '"' +
+      NO +
+      '",' +
+      '"' +
+      side +
+      '",' +
+      '"' +
+      product_code +
+      '",' +
+      '"' +
+      date_code +
+      '",' +
+      '"' +
+      pattern +
+      '",' +
+      '"' +
+      QTY +
+      '",' +
+      '"' +
+      sum_of_date_code +
+      '",' +
+      "\n";
+
+    setAdd_product([...add_product, item]);
+
+    var item2 =
+      "[NO: " +
       NO +
       "(" +
       side +
-      " )] - [PD CODE : " +
+      ")] " +
+      "[PRODUCT CODE: " +
       product_code +
-      "] - [DATE CODE : " +
+      "] " +
+      "[DATE CODE: " +
       date_code +
-      "] - [PATTERN : " +
+      "] " +
+      "[PATTERN: " +
       pattern +
-      "] - [QTY : " +
+      "] " +
+      "[QTY: " +
       QTY +
-      "] - [SUM : " +
+      "] " +
+      "[SUM: " +
       sum_of_date_code +
-      "]";
-    setAdd_product([...add_product, item]);
+      "] ";
+
     inputRef.current.value = "";
+    setAdd_product2([...add_product2, item2]);
+    //'"'+ NO + '"'+", product_code: "+'"' + product_code + '"'+" ,\n"
   }
 
-  const workbook = new Excel.Workbook();
-  const saveExcel = async (e) => {
-    e.preventDefault();
-    try {
-      const myInput = document.getElementById(myInputId);
-      const fileName = myInput.value || workBookName;
+  const removeTodo = (index) => {
 
-      // creating one worksheet in workbook
-      const worksheet = workbook.addWorksheet(workSheetName);
+    let todo = [...add_product2]
 
-      // add worksheet columns
-      // each columns contains header and its mapping key from data
-      worksheet.columns = columns;
+    todo.splice(index, 1)
+    setAdd_product2(todo)
 
-      // updated the font for first row.
-      worksheet.getRow(1).font = { bold: true };
-
-      // loop through all of the columns and set the alignment with width.
-      worksheet.columns.forEach((column) => {
-        column.width = column.header.length + 5;
-        column.alignment = { horizontal: "center" };
-      });
-
-      // loop through data and add each one to worksheet
-      data.forEach((singleData) => {
-        worksheet.addRow(singleData);
-      });
-
-      // loop through all of the rows and set the outline style.
-      worksheet.eachRow({ includeEmpty: false }, (row) => {
-        // store each cell to currentCell
-        const currentCell = row._cells;
-
-        // loop through currentCell to apply border only for the non-empty cell of excel
-        currentCell.forEach((singleCell) => {
-          // store the cell address i.e. A1, A2, A3, B1, B2, B3, ...
-          const cellAddress = singleCell._address;
-
-          // apply border
-          worksheet.getCell(cellAddress).border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
-        });
-      });
-
-      // write the content using writeBuffer
-      const buf = await workbook.xlsx.writeBuffer();
-
-      // download the processed file
-      saveAs(new Blob([buf]), `${fileName}.xlsx`);
-    } catch (error) {
-      console.error("<<<ERRROR>>>", error);
-      console.error("Something Went Wrong", error.message);
-    } finally {
-      // removing worksheet's instance to create new one
-      workbook.removeWorksheet(workSheetName);
-    }
-  };
-
+  }
   return (
     <div className="App">
       <Navbar bg="dark" variant="dark">
@@ -849,9 +825,9 @@ function App() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {add_product.map((item) => (
+                                {add_product2.map((item,index) => (
                                   <tr>
-                                    <td key={item}>{item}</td>
+                                    <td key={index}>{item} <Button  onClick={() => removeTodo(index)} >Remove </Button>  </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -871,22 +847,26 @@ function App() {
                                 </InputGroup.Text>
                                 <Form.Control
                                   type="text"
-                                  id={myInputId}
-                                  defaultValue={workBookName}
-                                  // onChange={(e) => setLoad_date(e.target.value)}
+                                  onChange={(e) =>
+                                    setFilename_excel(e.target.value)
+                                  }
                                 />
-                                <Button
-                                  variant="outline-success"
-                                  type="submit"
-                                  className="text-center  "
-                                  class="btn btn-outline-success"
-                                  style={{ width: "5rem" }}
-                                  onClick={saveExcel}
+
+                                <Card
+                                  style={{ width: "8rem" }}
+                                  className="pt-1"
                                 >
-                                  <img src={icon_excel} alt="Logo" width={20} />
-                                </Button>
+                                  {" "}
+                                  <CSVLink {...csvReport}>
+                                    {" "}
+                                    <img
+                                      src={icon_excel}
+                                      alt="Logo"
+                                      width={20}
+                                    />
+                                  </CSVLink>{" "}
+                                </Card>
                               </InputGroup>
-                              {/* <EX1></EX1> */}
                             </div>
 
                             <div style={{ width: "20rem" }} className="m-2">
